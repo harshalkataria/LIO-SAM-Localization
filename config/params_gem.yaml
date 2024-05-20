@@ -159,3 +159,6 @@ ekf_gps:
                                0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0.01, 0,      0,
                                0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0.01,   0,
                                0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0.015]
+# localization
+location:
+  filedir: "/home/harshal/PARA/Projects/TII_RSE/Assignment/maps/res-0-highbay-tracking-test-5-minute-start-115-sec-highres-with-intensity"

@@ -63,32 +63,6 @@ struct pcdmap {
     }
 };
 
-// EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-// struct LidarFrame {
-//     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-//     CLOUD_PTR laserCloud;
-//     CLOUD_PTR corner;
-//     CLOUD_PTR surf;
-//     // IMUIntegrator imuIntegrator;
-//     Eigen::Vector3d P;
-//     Eigen::Vector3d V;
-//     Eigen::Quaterniond Q;
-//     Eigen::Vector3d bg;
-//     Eigen::Vector3d ba;
-//     double timeStamp;
-//     LidarFrame() {
-//         corner.reset(new CLOUD);
-//         surf.reset(new CLOUD);
-//         laserCloud.reset(new CLOUD());
-//         P.setZero();
-//         V.setZero();
-//         Q.setIdentity();
-//         bg.setZero();
-//         ba.setZero();
-//         timeStamp = 0;
-//     }
-// };
-
 class mapOptimizationLocalization : public ParamServer {
    public:
     // gtsam
@@ -99,10 +73,11 @@ class mapOptimizationLocalization : public ParamServer {
     Values isamCurrentEstimate;
     Eigen::MatrixXd poseCovariance;
 
-    std::string filename = std::string("/home/harshal/PARA/Projects/TII_RSE/Assignment/maps/res-0-highbay-tracking-test-10-minute-start-30-sec");
+    std::string filename;
     pcdmap map;
     pcl::VoxelGrid<PointType> ds_corner_;
     pcl::VoxelGrid<PointType> ds_surf_;
+    pcl::VoxelGrid<PointType> ds_global_;
 
     pcl::KdTreeFLANN<PointType>::Ptr kdtree_keyposes_3d_;
     pcl::KdTreeFLANN<PointType>::Ptr kdtree_corner_map;
@@ -243,7 +218,7 @@ class mapOptimizationLocalization : public ParamServer {
         parameters.relinearizeThreshold = 0.1;
         parameters.relinearizeSkip = 1;
         isam = new ISAM2(parameters);
-        // nh.param<std::string>("location/filedir", filename, "");
+        nh.param<std::string>("location/filedir", filename, "");
 
         // sub_initial_pose_ =
         //     nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1, &mapOptimizationLocalization::initialPoseCB, this);
@@ -278,6 +253,7 @@ class mapOptimizationLocalization : public ParamServer {
         pubSLAMInfo = nh.advertise<lio_sam::cloud_info>("lio_sam/mapping/slam_info", 1);
         ds_corner_.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
         ds_surf_.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
+        ds_global_.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
         downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
         downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
         downSizeFilterICP.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
@@ -286,20 +262,13 @@ class mapOptimizationLocalization : public ParamServer {
 
         allocateMemory();
 
-        bool _loadMap = true;
-        std::string loadMapDirectory =
-            std::string("/home/harshal/PARA/Projects/TII_RSE/Assignment/maps/highbay-tracking-test-10-minute-start-30-sec");
-        if (_loadMap) {
-            // if (!loadMapService(loadMapDirectory)) {
-            //     ROS_ERROR("Cannot load map from %s", loadMapDirectory.c_str());
-            // }
-            if (loadmap())
-                std::cout << ANSI_COLOR_GREEN << "load map successful..." << ANSI_COLOR_RESET << std::endl;
-            else {
-                std::cout << ANSI_COLOR_RED_BOLD << "WARN: load map failed." << ANSI_COLOR_RESET << std::endl;
-                return;
-            }
+        if (loadmap()) {
+            std::cout << ANSI_COLOR_GREEN << "load map successful..." << ANSI_COLOR_RESET << std::endl;
+        } else {
+            std::cout << ANSI_COLOR_RED_BOLD << "WARN: load map failed." << ANSI_COLOR_RESET << std::endl;
+            return;
         }
+
         surround_surf.reset(new CLOUD);
         surround_corner.reset(new CLOUD);
 
@@ -382,40 +351,7 @@ class mapOptimizationLocalization : public ParamServer {
         cloudInfo = *msgIn;
         pcl::fromROSMsg(msgIn->cloud_corner, *laserCloudCornerLast);
         pcl::fromROSMsg(msgIn->cloud_surface, *laserCloudSurfLast);
-        // CLOUD_PTR laserCloudNormal;
-        // laserCloudNormal.reset(new CLOUD());
-        // for (int i = 0; i < laserCloudSurfLast->size(); i++) {
-        //     PointTypeNormal p;
-        //     p.x = laserCloudSurfLast->points[i].x;
-        //     p.y = laserCloudSurfLast->points[i].y;
-        //     p.z = laserCloudSurfLast->points[i].z;
-        //     p.intensity = laserCloudSurfLast->points[i].intensity;
-        //     p.normal_x = 0.0;
-        //     p.normal_y = 0.0;
-        //     p.normal_z = 0.0;
-        //     laserCloudNormal->push_back(p);
-        // }
-        // std::cout << ANSI_COLOR_BLUE << "laserCloudSurfLast Header: " << msgIn->cloud_surface.header.frame_id << ANSI_COLOR_RESET << std::endl;
 
-        // Eigen::Vector3d P;
-        // Eigen::Quaterniond Q;
-        // Eigen::Matrix4d transformLastMapped = Eigen::Matrix4d::Identity();
-
-        // //  predict pose use constant velocity
-        // P = transformLastMapped.topLeftCorner(3, 3) * delta_tl + transformLastMapped.topRightCorner(3, 1);
-        // Eigen::Matrix3d m3d = transformLastMapped.topLeftCorner(3, 3) * delta_Rl;
-        // Q = m3d;
-        // if (initializedFlag == Initializing) {
-        //     if (ICPScanMatchGlobal(laserCloudNormal, P, Q)) {
-        //         initializedFlag = Initialized;
-        //         std::cout << ANSI_COLOR_GREEN << "icp scan match successful ..." << ANSI_COLOR_RESET << std::endl;
-        //     }
-
-        //     transformLastMapped.topLeftCorner(3, 3) = Q.toRotationMatrix();
-        //     transformLastMapped.topRightCorner(3, 1) = P;
-
-        //     pubOdometry(transformLastMapped, timeLaserInfoCur);
-        // } else if (initializedFlag == Initialized) {
         std::lock_guard<std::mutex> lock(mtx);
 
         static double timeLastProcessing = -1;
@@ -505,6 +441,7 @@ class mapOptimizationLocalization : public ParamServer {
         std::cout << ANSI_COLOR_YELLOW << "file dir: " << filename << ANSI_COLOR_RESET << std::endl;
         CLOUD_PTR globalCornerCloud(new CLOUD);
         CLOUD_PTR globalSurfCloud(new CLOUD);
+        CLOUD_PTR globalMapCloud(new CLOUD);
 
         std::string fn_poses_ = filename + "/trajectory.pcd";
         std::string fn_corner_ = filename + "/CornerMap.pcd";
@@ -514,11 +451,11 @@ class mapOptimizationLocalization : public ParamServer {
 
         if (pcl::io::loadPCDFile(fn_transformations_, *map.cloudKeyPoses6D_) == -1 || pcl::io::loadPCDFile(fn_poses_, *map.cloudKeyPoses3D_) == -1 ||
             pcl::io::loadPCDFile(fn_corner_, *globalCornerCloud) == -1 || pcl::io::loadPCDFile(fn_surf_, *globalSurfCloud) == -1 ||
-            pcl::io::loadPCDFile(fn_global_, *map.globalMapCloud_)) {
+            pcl::io::loadPCDFile(fn_global_, *globalMapCloud) == -1) {
             std::cout << ANSI_COLOR_RED << "couldn't load pcd file" << ANSI_COLOR_RESET << std::endl;
             return false;
         }
-        std::cout << ANSI_COLOR_YELLOW << "load pcd file successful" << ANSI_COLOR_RESET << std::endl;
+        std::cout << ANSI_COLOR_GREEN << "load pcd file successful" << ANSI_COLOR_RESET << std::endl;
         map.corner_keyframes_.resize(map.cloudKeyPoses3D_->points.size());
         map.surf_keyframes_.resize(map.cloudKeyPoses3D_->points.size());
         for (int i = 0; i < map.cloudKeyPoses3D_->points.size(); ++i) {
@@ -532,8 +469,10 @@ class mapOptimizationLocalization : public ParamServer {
         for (int i = 0; i < globalCornerCloud->points.size(); ++i) {
             const auto& p = globalCornerCloud->points[i];
             map.corner_keyframes_[p.intensity]->points.push_back(p);
-            // std::cout << ANSI_COLOR_CYAN << "corner keyframe: " << i << " " << p.intensity << " " << p.x << " " << p.y << " " << p.z
-            //           << ANSI_COLOR_RESET << std::endl;
+            if (i % (globalCornerCloud->points.size() / 10) == 0) {
+                std::cout << ANSI_COLOR_CYAN << "corner keyframe: " << i << " " << p.intensity << " " << p.x << " " << p.y << " " << p.z
+                          << ANSI_COLOR_RESET << std::endl;
+            }
         }
         std::cout << ANSI_COLOR_YELLOW << "corner keyframes loaded " << ANSI_COLOR_RESET << std::endl;
         for (int i = 0; i < globalSurfCloud->points.size(); ++i) {
@@ -543,21 +482,6 @@ class mapOptimizationLocalization : public ParamServer {
             //   << std::endl;
         }
         std::cout << ANSI_COLOR_YELLOW << "surf keyframes loaded " << ANSI_COLOR_RESET << std::endl;
-        // for (int i = 0; i < map.cloudKeyPoses3D_->points.size(); ++i) {
-        //     PointTypePose thisPose6D;
-        //     // Take inverse of thisPose6D
-        //     thisPose6D.roll = -map.cloudKeyPoses6D_->points[i].roll;
-        //     thisPose6D.pitch = -map.cloudKeyPoses6D_->points[i].pitch;
-        //     thisPose6D.yaw = -map.cloudKeyPoses6D_->points[i].yaw;
-        //     thisPose6D.x = -map.cloudKeyPoses6D_->points[i].x;
-        //     thisPose6D.y = -map.cloudKeyPoses6D_->points[i].y;
-        //     thisPose6D.z = -map.cloudKeyPoses6D_->points[i].z;
-        //     thisPose6D.intensity = map.cloudKeyPoses6D_->points[i].intensity;
-        //     thisPose6D.time = map.cloudKeyPoses6D_->points[i].time;
-        //     *map.corner_keyframes_[i] = *TransformPointCloud(map.corner_keyframes_[i], &thisPose6D);
-        //     *map.surf_keyframes_[i] = *TransformPointCloud(map.surf_keyframes_[i], &thisPose6D);
-        // }
-        std::cout << ANSI_COLOR_YELLOW << "keyframes transformed " << ANSI_COLOR_RESET << std::endl;
         ds_corner_.setInputCloud(globalCornerCloud);
         ds_corner_.filter(*map.globalCornerMapCloud_);
 
@@ -565,46 +489,24 @@ class mapOptimizationLocalization : public ParamServer {
         for (int i = 0; i < map.cloudKeyPoses3D_->points.size(); ++i) {
             totalKeyFramesPointsNum += map.corner_keyframes_[i]->points.size() + map.surf_keyframes_[i]->points.size();
         }
-        std::cout << ANSI_COLOR_GREEN << "cloudKeyPoses3DSize: " << map.cloudKeyPoses3D_->points.size()
-                  << ", globalCornerCloudSize: " << globalCornerCloud->points.size()
-                  << ", globalSurfCloudSize: " << map.globalCornerMapCloud_->points.size() << ", totalKeyFramePointsNum: " << totalKeyFramesPointsNum
-                  << ANSI_COLOR_RESET << std::endl;
         ds_surf_.setInputCloud(globalSurfCloud);
         ds_surf_.filter(*map.globalSurfMapCloud_);
-        return true;
-    }
 
-    bool loadMapService(const std::string& loadMapDirectory) {
-        // Load each file into its corresponding point cloud
-        if (pcl::io::loadPCDFile(loadMapDirectory + "/trajectory.pcd", *_mapKeyPoses3D) == -1) {
-            std::cerr << "Failed to load map key poses 3D file: " << loadMapDirectory + "/trajectory.pcd" << std::endl;
-            return false;
-        }
-        if (pcl::io::loadPCDFile(loadMapDirectory + "/transformations.pcd", *_mapKeyPoses6D) == -1) {
-            std::cerr << "Failed to load map key poses 6D file: " << loadMapDirectory + "/transformations.pcd" << std::endl;
-            return false;
-        }
-        if (pcl::io::loadPCDFile(loadMapDirectory + "/CornerMap.pcd", *_mapCornerCloud) == -1) {
-            std::cerr << "Failed to load global corner cloud file: " << loadMapDirectory + "/CornerMap.pcd" << std::endl;
-            return false;
-        }
-        if (pcl::io::loadPCDFile(loadMapDirectory + "/SurfMap.pcd", *_mapSurfCloud) == -1) {
-            std::cerr << "Failed to load global surf cloud file: " << loadMapDirectory + "/SurfMap.pcd" << std::endl;
-            return false;
-        }
-        if (pcl::io::loadPCDFile(loadMapDirectory + "/GlobalMap.pcd", *_mapCloud) == -1) {
-            std::cerr << "Failed to load global map cloud file: " << loadMapDirectory + "/GlobalMap.pcd" << std::endl;
-            return false;
-        }
-        // Create kd-tree for the downsampled global maps
-        // _kdtreeCornerFromMap->setInputCloud(laserCloudCornerFromMapDS);
-        // _kdtreeSurfFromMap->setInputCloud(laserCloudSurfFromMapDS);
+        ds_global_.setInputCloud(globalMapCloud);
+        ds_global_.filter(*map.globalMapCloud_);
 
-        // Print success message
-        std::cout << "Loaded map from " << loadMapDirectory << std::endl;
+        std::cout << ANSI_COLOR_GREEN << "cloudKeyPoses3DSize: " << map.cloudKeyPoses3D_->points.size() << std::endl
+                  << ", globalCornerCloudSize: " << globalCornerCloud->points.size()
+                  << ", map.cornerCloudSize: " << map.globalCornerMapCloud_->points.size() << std::endl
+                  << ", globalSurfCloudSize: " << globalSurfCloud->points.size() << ", map.surfCloudSize: " << map.globalSurfMapCloud_->points.size()
+                  << std::endl
+                  << ", globalMapCloudSize: " << globalMapCloud->points.size() << ", map.globalMapCloudSize: " << map.globalMapCloud_->points.size()
+                  << std::endl
+                  << ", totalKeyFramePointsNum: " << totalKeyFramesPointsNum << ANSI_COLOR_RESET << std::endl;
 
         return true;
     }
+
     // Function to publish the loaded maps and keyPoses on different ros topics
     void publishLoadedMapAndKeyPoses() {
         // Publish the loaded map key poses
@@ -613,7 +515,7 @@ class mapOptimizationLocalization : public ParamServer {
         }
         // Publish the loaded global map
         if (pubGLobalMapCloud.getNumSubscribers() != 0) {
-            // publishCloud(pubGLobalMapCloud, map.globalMapCloud_, timeLaserInfoStamp, mapFrame);
+            publishCloud(pubGLobalMapCloud, map.globalMapCloud_, timeLaserInfoStamp, mapFrame);
         }
     }
 
@@ -1014,19 +916,12 @@ class mapOptimizationLocalization : public ParamServer {
         icp.setTransformationEpsilon(1e-6);
         icp.setEuclideanFitnessEpsilon(1e-6);
         icp.setRANSACIterations(0);
-        std::cout << ANSI_COLOR_WHITE << "laserCloudSurfFromMapDS size: " << laserCloudSurfFromMapDS->points.size() << ANSI_COLOR_RESET << std::endl;
+        std::cout << ANSI_COLOR_WHITE << "laserCloudSurfFromMapDSNum: " << laserCloudSurfFromMapDSNum
+                  << ", laserCloudSurfFromMapDS size: " << laserCloudSurfFromMapDS->points.size() << ANSI_COLOR_RESET << std::endl;
 
-        // pcl::shared_ptr<pcl::PointCloud<PointType>> globalKeyFrameCloud(new pcl::PointCloud<PointType>());
-        // globalKeyFrameCloud->points.resize(surround_surf->size());
-        // for (int i = 0; i < (int)surround_surf->size(); i++) {
-        //     globalKeyFrameCloud->points[i].x = surround_surf->points[i].x;
-        //     globalKeyFrameCloud->points[i].y = surround_surf->points[i].y;
-        //     globalKeyFrameCloud->points[i].z = surround_surf->points[i].z;
-        //     globalKeyFrameCloud->points[i].intensity = surround_surf->points[i].intensity;
-        // }
         // Align clouds
         icp.setInputSource(cureKeyframeCloud);
-        icp.setInputTarget(laserCloudSurfFromMapDS);
+        icp.setInputTarget(prevKeyframeCloud);
         pcl::PointCloud<PointType>::Ptr unused_result(new pcl::PointCloud<PointType>());
         icp.align(*unused_result);
 
@@ -1289,19 +1184,19 @@ class mapOptimizationLocalization : public ParamServer {
         extractCloud(cloudToExtract);
     }
 
-    void extractForLoopClosureFromMap() {
-        pcl::PointCloud<PointType>::Ptr cloudToExtract(new pcl::PointCloud<PointType>());
+    // void extractForLoopClosureFromMap() {
+    //     pcl::PointCloud<PointType>::Ptr cloudToExtract(new pcl::PointCloud<PointType>());
 
-        int numPoses = cloudKeyPoses3D->size();
-        for (int i = numPoses - 1; i >= 0; --i) {
-            if ((int)cloudToExtract->size() <= surroundingKeyframeSize)
-                cloudToExtract->push_back(cloudKeyPoses3D->points[i]);
-            else
-                break;
-        }
+    //     int numPoses = cloudKeyPoses3D->size();
+    //     for (int i = numPoses - 1; i >= 0; --i) {
+    //         if ((int)cloudToExtract->size() <= surroundingKeyframeSize)
+    //             cloudToExtract->push_back(cloudKeyPoses3D->points[i]);
+    //         else
+    //             break;
+    //     }
 
-        extractCloud(cloudToExtract);
-    }
+    //     extractCloud(cloudToExtract);
+    // }
 
     void extractNearby() {
         pcl::PointCloud<PointType>::Ptr surroundingKeyPoses(new pcl::PointCloud<PointType>());
@@ -1324,14 +1219,14 @@ class mapOptimizationLocalization : public ParamServer {
             pt.intensity = map.cloudKeyPoses3D_->points[pointSearchInd[0]].intensity;
         }
 
-        // also extract some latest key frames in case the robot rotates in one position
-        int numPoses = cloudKeyPoses3D->size();
-        for (int i = numPoses - 1; i >= 0; --i) {
-            if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 10.0)
-                surroundingKeyPosesDS->push_back(cloudKeyPoses3D->points[i]);
-            else
-                break;
-        }
+        // // also extract some latest key frames in case the robot rotates in one position
+        // int numPoses = cloudKeyPoses3D->size();
+        // for (int i = numPoses - 1; i >= 0; --i) {
+        //     if (timeLaserInfoCur - cloudKeyPoses6D->points[i].time < 10.0)
+        //         surroundingKeyPosesDS->push_back(cloudKeyPoses3D->points[i]);
+        //     else
+        //         break;
+        // }
 
         extractCloud(surroundingKeyPosesDS);
     }
@@ -1340,8 +1235,7 @@ class mapOptimizationLocalization : public ParamServer {
         // fuse the map
         laserCloudCornerFromMap->clear();
         laserCloudSurfFromMap->clear();
-        // *laserCloudCornerFromMap = *_mapCornerCloud;
-        // *laserCloudSurfFromMap = *_mapSurfCloud;
+
         for (int i = 0; i < (int)cloudToExtract->size(); ++i) {
             if (pointDistance(cloudToExtract->points[i], cloudKeyPoses3D->back()) > surroundingKeyframeSearchRadius) {
                 // Reason to continue
@@ -1360,20 +1254,21 @@ class mapOptimizationLocalization : public ParamServer {
                 *laserCloudCornerFromMap += laserCloudMapContainer[thisKeyInd].first;
                 *laserCloudSurfFromMap += laserCloudMapContainer[thisKeyInd].second;
             } else {
+                if (map.corner_keyframes_[thisKeyInd]->points.empty() == true || map.surf_keyframes_[thisKeyInd]->points.empty() == true) {
+                    std::cout << ANSI_COLOR_RED << "Keyframe " << thisKeyInd << " not found in corner or surf keyframes" << ANSI_COLOR_RESET
+                              << std::endl;
+                    continue;
+                }
+                pcl::PointCloud<PointType> laserCloudCornerTemp;
+                pcl::PointCloud<PointType> laserCloudSurfTemp;
                 // transformed cloud not available
-                pcl::PointCloud<PointType> laserCloudCornerTemp =
-                    *transformPointCloud(map.corner_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                laserCloudCornerTemp = *transformPointCloud(map.corner_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
                 // laserCloudCornerTemp->points[0].intensity = thisKeyInd;
-                pcl::PointCloud<PointType> laserCloudSurfTemp =
-                    *transformPointCloud(map.surf_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                laserCloudSurfTemp = *transformPointCloud(map.surf_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+
                 *laserCloudCornerFromMap += laserCloudCornerTemp;
                 *laserCloudSurfFromMap += laserCloudSurfTemp;
-                // ROS_INFO("Timestamp: %f", timeLaserInfoStamp.toSec());
-                // ROS_INFO("Keyframe %d not found in map", thisKeyInd);
-                // pcl::PointCloud<PointType> laserCloudCornerTemp = *_mapCornerCloud;
-                // pcl::PointCloud<PointType> laserCloudSurfTemp = *_mapSurfCloud;
-                // *laserCloudCornerFromMap = laserCloudCornerTemp;
-                // *laserCloudSurfFromMap = laserCloudSurfTemp;
+
                 laserCloudMapContainer[thisKeyInd] = make_pair(laserCloudCornerTemp, laserCloudSurfTemp);
             }
         }

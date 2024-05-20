@@ -1571,6 +1571,12 @@ public:
         pcl::PointCloud<PointType>::Ptr thisSurfKeyFrame(new pcl::PointCloud<PointType>());
         pcl::copyPointCloud(*laserCloudCornerLastDS,  *thisCornerKeyFrame);
         pcl::copyPointCloud(*laserCloudSurfLastDS,    *thisSurfKeyFrame);
+        for (int i = 0; i < thisCornerKeyFrame->points.size(); i++) {
+            thisCornerKeyFrame->points[i].intensity = thisPose3D.intensity;
+        }
+        for (int i = 0; i < thisSurfKeyFrame->points.size(); i++) {
+            thisSurfKeyFrame->points[i].intensity = thisPose3D.intensity;
+        }
 
         // save key frame cloud
         cornerCloudKeyFrames.push_back(thisCornerKeyFrame);
