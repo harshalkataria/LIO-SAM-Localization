@@ -1,6 +1,6 @@
 #include "utility.h"
-#include "lio_sam/cloud_info.h"
-#include "lio_sam/save_map.h"
+#include "lio_sam_localization/cloud_info.h"
+#include "lio_sam_localization/save_map.h"
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -82,7 +82,7 @@ public:
     ros::ServiceServer srvSaveMap;
 
     std::deque<nav_msgs::Odometry> gpsQueue;
-    lio_sam::cloud_info cloudInfo;
+    lio_sam_localization::cloud_info cloudInfo;
 
     vector<pcl::PointCloud<PointType>::Ptr> cornerCloudKeyFrames;
     vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;
@@ -167,7 +167,7 @@ public:
         pubLaserOdometryIncremental = nh.advertise<nav_msgs::Odometry> ("lio_sam/mapping/odometry_incremental", 1);
         pubPath                     = nh.advertise<nav_msgs::Path>("lio_sam/mapping/path", 1);
 
-        subCloud = nh.subscribe<lio_sam::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
+        subCloud = nh.subscribe<lio_sam_localization::cloud_info>("lio_sam/feature/cloud_info", 1, &mapOptimization::laserCloudInfoHandler, this, ros::TransportHints().tcpNoDelay());
         subGPS   = nh.subscribe<nav_msgs::Odometry> (gpsTopic, 200, &mapOptimization::gpsHandler, this, ros::TransportHints().tcpNoDelay());
         subLoop  = nh.subscribe<std_msgs::Float64MultiArray>("lio_loop/loop_closure_detection", 1, &mapOptimization::loopInfoHandler, this, ros::TransportHints().tcpNoDelay());
 
@@ -181,7 +181,7 @@ public:
         pubRecentKeyFrame     = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/cloud_registered", 1);
         pubCloudRegisteredRaw = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/cloud_registered_raw", 1);
 
-        pubSLAMInfo           = nh.advertise<lio_sam::cloud_info>("lio_sam/mapping/slam_info", 1);
+        pubSLAMInfo           = nh.advertise<lio_sam_localization::cloud_info>("lio_sam/mapping/slam_info", 1);
 
         downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
         downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
@@ -234,7 +234,7 @@ public:
         matP = cv::Mat(6, 6, CV_32F, cv::Scalar::all(0));
     }
 
-    void laserCloudInfoHandler(const lio_sam::cloud_infoConstPtr& msgIn)
+    void laserCloudInfoHandler(const lio_sam_localization::cloud_infoConstPtr& msgIn)
     {
         // extract time stamp
         timeLaserInfoStamp = msgIn->header.stamp;
@@ -352,7 +352,7 @@ public:
 
 
 
-    bool saveMapService(lio_sam::save_mapRequest& req, lio_sam::save_mapResponse& res)
+    bool saveMapService(lio_sam_localization::save_mapRequest& req, lio_sam_localization::save_mapResponse& res)
     {
       string saveMapDirectory;
 
@@ -429,8 +429,8 @@ public:
         if (savePCD == false)
             return;
 
-        lio_sam::save_mapRequest  req;
-        lio_sam::save_mapResponse res;
+        lio_sam_localization::save_mapRequest  req;
+        lio_sam_localization::save_mapResponse res;
 
         if(!saveMapService(req, res)){
             cout << "Fail to save map" << endl;
@@ -1746,7 +1746,7 @@ public:
         {
             if (lastSLAMInfoPubSize != cloudKeyPoses6D->size())
             {
-                lio_sam::cloud_info slamInfo;
+                lio_sam_localization::cloud_info slamInfo;
                 slamInfo.header.stamp = timeLaserInfoStamp;
                 pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
                 *cloudOut += *laserCloudCornerLastDS;

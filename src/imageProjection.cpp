@@ -1,5 +1,5 @@
 #include "utility.h"
-#include "lio_sam/cloud_info.h"
+#include "lio_sam_localization/cloud_info.h"
 
 struct VelodynePointXYZIRT
 {
@@ -79,7 +79,7 @@ private:
     float odomIncreY;
     float odomIncreZ;
 
-    lio_sam::cloud_info cloudInfo;
+    lio_sam_localization::cloud_info cloudInfo;
     double timeScanCur;
     double timeScanEnd;
     std_msgs::Header cloudHeader;
@@ -96,7 +96,7 @@ public:
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
 
         pubExtractedCloud = nh.advertise<sensor_msgs::PointCloud2> ("lio_sam/deskew/cloud_deskewed", 1);
-        pubLaserCloudInfo = nh.advertise<lio_sam::cloud_info> ("lio_sam/deskew/cloud_info", 1);
+        pubLaserCloudInfo = nh.advertise<lio_sam_localization::cloud_info> ("lio_sam/deskew/cloud_info", 1);
 
         allocateMemory();
         resetParameters();
