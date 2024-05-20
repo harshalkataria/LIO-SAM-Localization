@@ -89,6 +89,25 @@ docker run -dt --name gem-lio-noetic-1 \
 
 ## Run the packages inside the docker container with bag files
 
+* ### Setup terminal
+
+1. On a new terminal give display access to docker:
+```
+xhost +local:docker
+```
+
+2. Start the container if it is stopped:
+```
+docker start gem-lio-noetic-1
+```
+
+3. Get interactive shell access to run commands inside docker container:
+```
+docker exec -it gem-lio-noetic-1 bash
+```
+
+Repeat these steps for each new terminal you open for the commands below.
+
 * ### To create a map using bag file
 
 1. Source the required setup.bash
@@ -129,6 +148,17 @@ rosbag play /home/ubuntu/testVolume-1/highbay_track-5-minutes-highres_2024-05-20
 ```
 
 ### Voila! the robot is localizing itself in known environment
+
+## Run the Gazebo simulation of gem robot
+1. In a new terminal source the required setup.bash
+```
+source /home/ubuntu/gem_ws/devel.setup
+```
+
+2. Run the mapping launch file:
+```
+roslaunch gem_gazebo gem_gazebo_rviz.launch world_name:=./worlds/highbay_track.world x:=0 y:=0 velodyne_points:="true"
+```
 
 ## Service
   - /lio_sam/save_map
