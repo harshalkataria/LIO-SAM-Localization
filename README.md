@@ -52,7 +52,7 @@ Use the following commands to download and compile the package.
 cd ~/catkin_ws/src
 git clone https://github.com/harshalkataria/LIO-SAM-Localization.git
 cd ..
-catkin_make
+catkin_make -j2
 ```
 
 ## Using Docker
@@ -120,12 +120,17 @@ source /home/ubuntu/lio_sam_localization_ws/devel.setup
 roslaunch lio_sam_localization run.launch config_file:="/home/ubuntu/lio_sam_localization_ws/src/LIO-SAM-Localization/config/params_gem.yaml"
 ```
 
-3. Play existing bag files:
+3. To visualize against odom data, we need to publish transformation between world and map frame to get accurate comparison between ground truth odom data and estimated odom data: **OPTIONAL**
+```
+rosrun tf2_ros static_transform_publisher 22.748378703042732 -1.1095682571420336 -0.10003287520306003 3.526007880438855e-07 1.0449289132344871e-05 -0.006435430963485527 0.9999792923450977 world map
+```
+
+4. Play existing bag files:
 ```
 rosbag play /home/ubuntu/testVolume-1/highbay_track-5-minutes-highres_2024-05-20-13-53-11.bag --start 115
 ```
 
-4. Once the bag file ends, save the map:
+5. Once the bag file ends, save the map:
 ```
 rosservice call /lio_sam/save_map 0.2 "/home/ubuntu/testVolume-1/<sample-map-dir-name>/"
 ```
@@ -137,17 +142,23 @@ rosservice call /lio_sam/save_map 0.2 "/home/ubuntu/testVolume-1/<sample-map-dir
 source /home/ubuntu/lio_sam_localization_ws/devel.setup
 ```
 
-2. Run the mapping launch file:
+2. Run the mapping launch file after editing *loadMapFileDir:="/home/ubuntu/testVolume-1/sample-map-dir-name/"* in params file:
 ```
-roslaunch lio_sam_localization run_loc.launch config_file:="/home/ubuntu/lio_sam_localization_ws/src/LIO-SAM-Localization/config/params_gem.yaml" lioMapFileDir:="/home/ubuntu/testVolume-1/<sample-map-dir-name>/"
+roslaunch lio_sam_localization run_loc.launch config_file:="/home/ubuntu/lio_sam_localization_ws/src/LIO-SAM-Localization/config/params_gem.yaml" 
+```
+3. To visualize against odom data, we need to publish transformation between world and map frame to get accurate comparison between ground truth odom data and estimated odom data: **OPTIONAL**
+```
+rosrun tf2_ros static_transform_publisher 22.748378703042732 -1.1095682571420336 -0.10003287520306003 3.526007880438855e-07 1.0449289132344871e-05 -0.006435430963485527 0.9999792923450977 world map
 ```
 
-3. Play existing bag files:
+4. Play existing bag files:
 ```
 rosbag play /home/ubuntu/testVolume-1/highbay_track-5-minutes-highres_2024-05-20-13-53-11.bag --start 115
 ```
 
 ### Voila! the robot is localizing itself in known environment
+
+Please note that the transformation between world and map frame needs to be initialized by user for now. (This will be improved in future)
 
 ## Run the Gazebo simulation of gem robot
 1. In a new terminal source the required setup.bash
@@ -155,11 +166,19 @@ rosbag play /home/ubuntu/testVolume-1/highbay_track-5-minutes-highres_2024-05-20
 source /home/ubuntu/gem_ws/devel.setup
 ```
 
-2. Run the mapping launch file:
+2. You can edit the gem.gazebo file to change the **update_rate** of the **imu** or **params** for **velodyne** in **gem.urdf.xacro** and see impact on performance. **OPTIONAL**
+
+3. Run the gem_gazebo_rviz launch file:
 ```
 roslaunch gem_gazebo gem_gazebo_rviz.launch world_name:=./worlds/highbay_track.world x:=0 y:=0 velodyne_points:="true"
 ```
 
+4. Transformation to be published between velodyne and gem/velodyne frame to complete the tf_tree so that we can visualize on rviz
+```
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 /velodyne gem/velodyne
+```
+
+Please note that while running with gem_gazebo, we need to take care not to be stationary for too long after starting mapping, or else we will see drifts.
 ## Service
   - /lio_sam/save_map
     - save map as a PCD file.

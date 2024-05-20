@@ -160,4 +160,4 @@ ekf_gps:
                                0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0.01,   0,
                                0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,    0,    0,      0.015]
 # localization
-loadMapFileDir: "/home/harshal/PARA/Projects/TII_RSE/Assignment/maps/res-0-highbay-tracking-test-5-minute-start-115-sec-highres-with-intensity"
+loadMapFileDir: "/home/ubuntu/testVolume-1/res-0-highbay-tracking-test-5-minute-start-115-sec-highres-with-intensity"
