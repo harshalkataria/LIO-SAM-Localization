@@ -218,7 +218,7 @@ class mapOptimizationLocalization : public ParamServer {
         parameters.relinearizeThreshold = 0.1;
         parameters.relinearizeSkip = 1;
         isam = new ISAM2(parameters);
-        nh.param<std::string>("location/filedir", filename, "");
+        nh.param<std::string>("loadMapFileDir", filename, "");
 
         // sub_initial_pose_ =
         //     nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1, &mapOptimizationLocalization::initialPoseCB, this);
