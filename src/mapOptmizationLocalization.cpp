@@ -437,6 +437,25 @@ class mapOptimizationLocalization : public ParamServer {
         thisPose6D.yaw = transformIn[2];
         return thisPose6D;
     }
+
+    /**
+     * @brief load map from pcd file
+     * @return true if load map successful
+     * @return false if load map failed
+     *
+     *
+     * 1. load trajectory.pcd, CornerMap.pcd, SurfMap.pcd, GlobalMap.pcd, transformations.pcd
+     * 2. load trajectory.pcd to cloudKeyPoses3D_
+     * 3. load CornerMap.pcd to globalCornerMapCloud_
+     * 4. load SurfMap.pcd to globalSurfMapCloud_
+     * 5. load GlobalMap.pcd to globalMapCloud_
+     * 6. load transformations.pcd to cloudKeyPoses6D_
+     * 7. load CornerMap.pcd to corner_keyframes_
+     * 8. load SurfMap.pcd to surf_keyframes_
+     * 9. downsample globalCornerMapCloud_ to globalCornerMapCloud_
+     * 10. downsample globalSurfMapCloud_ to globalSurfMapCloud_
+     * 11. downsample globalMapCloud_ to globalMapCloud_
+     */
     bool loadmap() {
         std::cout << ANSI_COLOR_YELLOW << "file dir: " << filename << ANSI_COLOR_RESET << std::endl;
         CLOUD_PTR globalCornerCloud(new CLOUD);
@@ -521,7 +540,6 @@ class mapOptimizationLocalization : public ParamServer {
 
     void initialPoseCB(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg) {
         // publishLoadedMapAndKeyPoses();
-        //  低频，不加锁
         PointType p;
 
         _initpose.x = msg->pose.pose.position.x;
@@ -1262,9 +1280,13 @@ class mapOptimizationLocalization : public ParamServer {
                 pcl::PointCloud<PointType> laserCloudCornerTemp;
                 pcl::PointCloud<PointType> laserCloudSurfTemp;
                 // transformed cloud not available
-                laserCloudCornerTemp = *transformPointCloud(map.corner_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                // laserCloudCornerTemp = *transformPointCloud(map.corner_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                laserCloudCornerTemp = *map.corner_keyframes_[thisKeyInd];
                 // laserCloudCornerTemp->points[0].intensity = thisKeyInd;
-                laserCloudSurfTemp = *transformPointCloud(map.surf_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                // laserCloudSurfTemp = *transformPointCloud(map.surf_keyframes_[thisKeyInd], &map.cloudKeyPoses6D_->points[thisKeyInd]);
+                laserCloudSurfTemp = *map.surf_keyframes_[thisKeyInd];
+                for (auto& pt : laserCloudCornerTemp.points) pt.intensity = 0;
+                for (auto& pt : laserCloudSurfTemp.points) pt.intensity = 0;
 
                 *laserCloudCornerFromMap += laserCloudCornerTemp;
                 *laserCloudSurfFromMap += laserCloudSurfTemp;
@@ -1284,7 +1306,7 @@ class mapOptimizationLocalization : public ParamServer {
         laserCloudSurfFromMapDSNum = laserCloudSurfFromMapDS->size();
         std::cout << ANSI_COLOR_GREEN << "laserCloudSurfFromMapDSNum: " << laserCloudSurfFromMapDSNum << ANSI_COLOR_RESET << std::endl;
         // clear map cache if too large
-        if (laserCloudMapContainer.size() > 1000) laserCloudMapContainer.clear();
+        // if (laserCloudMapContainer.size() > 1000) laserCloudMapContainer.clear();
     }
 
     void extractSurroundingKeyFrames() {
