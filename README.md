@@ -112,7 +112,7 @@ Repeat these steps for each new terminal you open for the commands below.
 
 1. Source the required setup.bash
 ```
-source /home/ubuntu/lio_sam_localization_ws/devel.setup
+source /home/ubuntu/lio_sam_localization_ws/devel/setup.bash
 ```
 
 2. Run the mapping launch file:
@@ -139,7 +139,7 @@ rosservice call /lio_sam/save_map 0.2 "/home/ubuntu/testVolume-1/<sample-map-dir
 
 1. Source the required setup.bash
 ```
-source /home/ubuntu/lio_sam_localization_ws/devel.setup
+source /home/ubuntu/lio_sam_localization_ws/devel/setup.bash
 ```
 
 2. Run the mapping launch file after editing *loadMapFileDir:="/home/ubuntu/testVolume-1/sample-map-dir-name/"* in params file:
@@ -163,7 +163,7 @@ Please note that the transformation between world and map frame needs to be init
 ## Run the Gazebo simulation of gem robot
 1. In a new terminal source the required setup.bash
 ```
-source /home/ubuntu/gem_ws/devel.setup
+source /home/ubuntu/gem_ws/devel/setup.bash
 ```
 
 2. You can edit the gem.gazebo file to change the **update_rate** of the **imu** or **params** for **velodyne** in **gem.urdf.xacro** and see impact on performance. **OPTIONAL**
