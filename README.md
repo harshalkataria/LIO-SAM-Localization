@@ -22,7 +22,6 @@ Estimate the odometry of a robot in pre-built map using LIO-SAM
 The following changes have been made to LIO-SAM in order to be able to run localization on pre-built map:
 * **+mapOptimizationLocalization**
   - **+loadmap()**: This function loads the different .pcd files saved and stores the point cloud data into respective pointers, also creates vectors for map_key_frames_.
-  - **exrac==
   - **extractNearby()**: In this function instead of taking the surroundingKeyPoses by comparing currentKeyPose with previousKeyPose we are now extracting nearby KeyPoses to cloudKeyPoses3D from map.cloudPoses3D.
   - **extractCloud()**: Similarly in this function instead of previousKeyFrames we are taking data from mapKeyFrames associated to map.cloudKeyPoses3D.
 * **mapOptimization**
