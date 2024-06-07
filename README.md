@@ -22,7 +22,6 @@ Estimate the odometry of a robot in pre-built map using LIO-SAM
 The following changes have been made to LIO-SAM in order to be able to run localization on pre-built map:
 * **+mapOptimizationLocalization**
   - **+loadmap()**: This function loads the different .pcd files saved and stores the point cloud data into respective pointers, also creates vectors for map_key_frames_.
-  - **exrac==
   - **extractNearby()**: In this function instead of taking the surroundingKeyPoses by comparing currentKeyPose with previousKeyPose we are now extracting nearby KeyPoses to cloudKeyPoses3D from map.cloudPoses3D.
   - **extractCloud()**: Similarly in this function instead of previousKeyFrames we are taking data from mapKeyFrames associated to map.cloudKeyPoses3D.
 * **mapOptimization**
@@ -112,7 +111,7 @@ Repeat these steps for each new terminal you open for the commands below.
 
 1. Source the required setup.bash
 ```
-source /home/ubuntu/lio_sam_localization_ws/devel.setup
+source /home/ubuntu/lio_sam_localization_ws/devel/setup.bash
 ```
 
 2. Run the mapping launch file:
@@ -139,7 +138,7 @@ rosservice call /lio_sam/save_map 0.2 "/home/ubuntu/testVolume-1/<sample-map-dir
 
 1. Source the required setup.bash
 ```
-source /home/ubuntu/lio_sam_localization_ws/devel.setup
+source /home/ubuntu/lio_sam_localization_ws/devel/setup.bash
 ```
 
 2. Run the mapping launch file after editing *loadMapFileDir:="/home/ubuntu/testVolume-1/sample-map-dir-name/"* in params file:
@@ -163,7 +162,7 @@ Please note that the transformation between world and map frame needs to be init
 ## Run the Gazebo simulation of gem robot
 1. In a new terminal source the required setup.bash
 ```
-source /home/ubuntu/gem_ws/devel.setup
+source /home/ubuntu/gem_ws/devel/setup.bash
 ```
 
 2. You can edit the gem.gazebo file to change the **update_rate** of the **imu** or **params** for **velodyne** in **gem.urdf.xacro** and see impact on performance. **OPTIONAL**

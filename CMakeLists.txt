@@ -107,3 +107,8 @@ add_executable(${PROJECT_NAME}_mapOptmizationLocalization src/mapOptmizationLoca
 add_dependencies(${PROJECT_NAME}_mapOptmizationLocalization ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_compile_options(${PROJECT_NAME}_mapOptmizationLocalization PRIVATE ${OpenMP_CXX_FLAGS})
 target_link_libraries(${PROJECT_NAME}_mapOptmizationLocalization Boost::timer ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} ${OpenMP_CXX_FLAGS} gtsam)
+
+# Covariance Estimator
+add_executable(${PROJECT_NAME}_covarianceEstimator src/covarianceEstimator.cpp)
+add_dependencies(${PROJECT_NAME}_covarianceEstimator ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(${PROJECT_NAME}_covarianceEstimator ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
